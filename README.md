@@ -1,184 +1,208 @@
-SdamGIA Api
-===
-**SdamGIA Api** – Python модуль для взаимодействия с образовательным порталом СДАМ ГИА
+# SdamGIA API
 
-## Структура СдамГИА
-Чтобы было проще понять, как устроена база заданий СдамГИА, предлагаю воспользоваться следующей схемой:
-```
-СдамГИА
-└── Предмет (subject)
-    ├── Каталог заданий (catalog)
-    │   └── Задание (topic)
-    │       └── Категория (category)
-    │           └── Задача (problem)
-    └── Тест (test)
-        └── Задача (problem)       
-```
-У каждой задачи, категории или теста есть свой идентификатор. 
-Задания тоже имеют номера, которые в свою очередь могут иметь такие значения как "Д1" или "C4". Этим они отличаются от идентификаторов.
+Современная Python-библиотека для работы с образовательным порталом [sdamgia.ru](https://sdamgia.ru/) для подготовки к ОГЭ/ЕГЭ.
+
+## Возможности
+
+- **Синхронный и асинхронный режим** - `SdamgiaClient` и `AsyncSdamgiaClient`
+- **Полная типизация** - type hints для всех методов и моделей
+- **Pydantic модели** - структурированные данные с валидацией
+- **Rate limiting** - встроенное ограничение частоты запросов
+- **Автоповторы с backoff** - автоматические повторы при ошибках
+- **ОГЭ и ЕГЭ** - поддержка обоих типов экзаменов
+- **Все предметы** - математика, физика, информатика, русский и другие..
 
 ## Установка
 
-    $ pip3 install sdamgia-api
+```bash
+git clone https://github.com/princeofscale/oge-sdamgia-api.git
+```
 
-### Установка зависимостей
-Для поиска задач по тексту на изображении необходимо установить pytesseract:
+## Быстрый старт
 
-    $ pip3 install pytesseract
+### Синхронное использование
 
-А также [Tesseract-OCR](https://www.severcart.ru/blog/all/install_tesseract/)
-
-Обратите внимание, что для корректной работы нужен русский языковой пакет
-
-## Использование
-
-### Инициализация
 ```python
-from sdamgia import SdamGIA
+from sdamgia_api import SdamgiaClient, Subject, ExamType
 
-sdamgia = SdamGIA()
+client = SdamgiaClient()
+
+problem = client.get_problem("1001", Subject.MATH, ExamType.EGE)
+print(f"Задача: {problem.condition.text}")
+print(f"Ответ: {problem.answer}")
+
+variant = client.get_variant("12345", Subject.MATH, ExamType.EGE)
+for prob_ref in variant.problems:
+    print(f"Задача #{prob_ref.number}: {prob_ref.id}")
+
+results = client.search("вероятность", Subject.MATH, ExamType.EGE)
+print(f"Найдено {len(results)} задач")
+
+client.close()
+
+with SdamgiaClient() as client:
+    problem = client.get_problem("1001", Subject.MATH, ExamType.EGE)
 ```
 
-### Поиск задачи по ее идентификатору
+### Асинхронное использование
+
 ```python
-subject = 'math'
-id = '1001'
-sdamgia.get_problem_by_id(subject, id)
+import asyncio
+from sdamgia_api import AsyncSdamgiaClient, Subject, ExamType
+
+async def main():
+    async with AsyncSdamgiaClient() as client:
+        problem = await client.get_problem("1001", Subject.MATH, ExamType.EGE)
+        print(f"Задача: {problem.condition.text}")
+
+        catalog = await client.get_catalog(Subject.MATH, ExamType.EGE)
+        for topic in catalog.topics:
+            print(f"Тема {topic.id}: {topic.name}")
+
+asyncio.run(main())
 ```
-```shell
-{
-  'id': '1001',
-  'topic': '4',
-  'condition': {
-    'text': 'На экзамен вынесено 60 вопросов, Андрей не выучил 3 из них. Найдите вероятность того, что ему попадется выученный вопрос.', 
-    'images': []
-  }, 
-  'solution': {
-    'text': 'Решение.Андрей выучил 60\xa0–\xa03\xa0=\xa057 вопросов. Поэтому вероятность того, что на экзамене ему попадется выученный вопрос равна\xa0Ответ: 0,95.',
-    'images': ['https://ege.sdamgia.ru/formula/svg/9f/9fbf55ab44a507fb47ba8a2666cd7644.svg']
-  }, 
-  'answer': '0,95', 
-  'analogs': ['1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008', '1009', '1010'], 
-  'url': 'https://math-ege.sdamgia.ru/problem?id=1001'
-}
-```
-Можно сгенерировать задачу в виде изображения:
+
+## API
+
+### Клиенты
+
 ```python
-path_to_img = '/imgs/problem.png'
-sdamgia.get_problem_by_id(subject, id, path_to_img=path_to_img)
+client = SdamgiaClient(
+    user_agent="Custom UA",      # Кастомный User-Agent
+    timeout=30.0,                # Таймаут запроса в секундах
+    max_retries=3,               # Количество повторов
+    rate_limit_rps=3.0,          # Лимит запросов в секунду
+    proxy="http://proxy:8080",   # Прокси (опционально)
+)
 ```
 
+### Методы
 
-### Поиск задач по запросу
+| Метод | Описание |
+|-------|----------|
+| `get_problem(id, subject, exam_type)` | Получить задачу по ID |
+| `get_variant(id, subject, exam_type)` | Получить вариант по ID |
+| `list_variants(subject, exam_type)` | Список доступных вариантов |
+| `search(query, subject, exam_type, page=1)` | Поиск задач |
+| `get_catalog(subject, exam_type)` | Каталог тем |
+| `get_category_problems(id, subject, exam_type, page=1)` | Задачи в категории |
+
+### Модели
+
+#### Problem
+
 ```python
-subject = 'math'
-request = 'Найдите количество'
-sdamgia.search(subject, request)
-```
-```shell
-['6407', '8795', '8799', '27501', '519508', '519534', '525371', '512436', '6401', '6421', '6427', '7321', '7325', '7801', '7803', '7807', '7809', '8037', '8039', '8045']
+class Problem:
+    id: str
+    url: str
+    topic: str
+    condition: ContentBlock
+    solution: ContentBlock | None
+    answer: str
+    analogs: list[str]
+    subject: Subject
+    exam_type: ExamType
 ```
 
-### Поиск теста по его идентификатору
+#### Variant
+
 ```python
-subject = 'math'
-id = '1770'
-sdamgia.get_test_by_id(subject, id)
-# Возвращает список задач, входящих в тест
-```
-```shell
-['77345', '28765', '77374', '27903', '26675', '27700', '77411', '27506', '27132', '28008', '26703', '99592']
+class Variant:
+    id: str
+    url: str
+    problems: list[ProblemRef]
+    subject: Subject
+    exam_type: ExamType
 ```
 
-### Поиск категории по ее идентификатору
+#### Catalog
+
 ```python
-subject = 'math'
-id = '1'
-sdamgia.get_category_by_id(subject, id)
-# Возвращает список задач, входящих в категорию
-```
-```shell
-['77334', '323512', '501201', '509077', '509106']
+class Catalog:
+    topics: list[Topic]
+    subject: Subject
+    exam_type: ExamType
 ```
 
-### Получение каталога
+### Предметы (Subject)
+
 ```python
-subject = 'math'
-sdamgia.get_catalog(subject)
-```
-```shell
-[
-  {
-    'topic_id': '1',
-    'topic_name': 'Простейшие текстовые задачи', 
-    'categories': [
-      {'category_id': '174', 'category_name': 'Вычисления'}, 
-      {'category_id': '1', 'category_name': 'Округление с недостатком'}, 
-      {'category_id': '2', 'category_name': 'Округление с избытком'},
-      {'category_id': '249', 'category_name': 'Проценты'},
-      {'category_id': '5', 'category_name': 'Проценты и округление'}
-    ]
-  },
-  {
-    ...
-  }        
-]
+from sdamgia_api import Subject
+
+Subject.MATH    # Математика
+Subject.MATHB   # Математика (базовый уровень, только ЕГЭ)
+Subject.PHYS    # Физика
+Subject.INF     # Информатика
+Subject.RUS     # Русский язык
+Subject.BIO     # Биология
+Subject.EN      # Английский язык
+Subject.CHEM    # Химия
+Subject.GEO     # География
+Subject.SOC     # Обществознание
+Subject.HIST    # История
+Subject.LIT     # Литература
+Subject.DE      # Немецкий язык
+Subject.FR      # Французский язык
+Subject.SP      # Испанский язык
 ```
 
-### Генерация теста
-По умолчанию генерируется тест, включающий по одной задаче из каждого задания предмета. <br>
-Так же можно вручную указать одинаковое количество задач для каждого из заданий: {'full': <кол-во задач>} <br>
-Указать определенные задания с определенным количеством задач для каждого: {<номер задания>: <кол-во задач>, ... }
+### Тип экзамена (ExamType)
+
 ```python
-subject = 'math'
-problems = {1: 1, 2: 2, 3: 4}
-sdamgia.generate_test(subject, problems)
-# Возвращает идентификатор сгенерированного теста
-```
-```shell
-38299510
-```
-Обратите внимание, что в этом случае идентификатор задания - только науральное число. Т.е. если после задания 15 идет задание Д1, оно должно будет записываться как 16 задание.
+from sdamgia_api import ExamType
 
-### Генерация pdf-версии теста
+ExamType.OGE  # Основной государственный экзамен (9 класс)
+ExamType.EGE  # Единый государственный экзамен (11 класс)
+```
+
+### Исключения
+
 ```python
-sdamgia.generate_pdf('math', '38299510', pdf='h')
-```
-```shell
-https://math-ege.sdamgia.ru/pdf/1fe7d7d8408f8d5195fabfd8ab393d63.pdf
-```
-Список параметров:
-```
-subject: Наименование предмета
-testid: Идентифигатор теста
-solution: Пояснение
-nums: № заданий
-answers: Ответы
-key: Ключ
-crit: Критерии
-instruction: Инструкция
-col: Нижний колонтитул
-pdf: Версия генерируемого pdf документа
-    По умолчанию генерируется стандартная вертикальная версия
-    h - горизонтальная версия
-    z - версия с крупным шрифтом
-    m - версия с большим полем
+from sdamgia_api import (
+    SdamgiaError,       # Базовое исключение
+    NetworkError,       # Сетевые ошибки
+    ParseError,         # Ошибки парсинга HTML
+    RateLimitError,     # Превышен лимит запросов (HTTP 429)
+    NotFoundError,      # Ресурс не найден
+    InvalidSubjectError # Неверный предмет для типа экзамена
+)
 ```
 
-### Поиск задач по изображению <sup>beta</sup>
+## Разработка
 
-С помощью sdamgia-api вы можете искать задачи по тексту на изображении. Например, на фотографии распечатки.
+### Установка
 
-Для начала, необходимо указать путь к исполняемому файлу Tesseract-OCR:
-```python
-sdamgia.tesseract_src = "C:/Program Files/Tesseract-OCR/tesseract.exe"
+```bash
+git clone https://github.com/princeofscale/oge-sdamgia-api.git
+cd oge-sdamgia-api
+
+pip install -e ".[dev]"
+
+pre-commit install
 ```
-Теперь мы можем запустить поиск:
-```python
-sdamgia.search_by_img('rus', 'Image.jpg')
-# Возвращает список найденных задач
+
+### Тесты
+
+```bash
+pytest
 ```
-```shell
-['12629', '14062', '2846', '2836', '2837', '2838', '2839', '2845', '2847', '7776', '10242', '874', '864', '865', '866', '867', '873', '2359', '456', '446', '447', '448', '449', '455', '2348', '7815', '691', '863', '14426', '7867', '1262', '1889', '6716', '6706', '6707', '6708', '6709', '6715', '6717', '8899', '8895', '8896', '8897', '8898', '8900', '4194', '4184', '4185', '4186', '4187', '4193', '4195', '30', '28', '29', '31', '37', '38', '2337', '676', '674', '675', '677', '683', '684', '2168', '1094', '1092', '1093', '1095', '1101', '1102', '2365', '6893', '6891', '6892', '6894', '6900', '6901', '6902', '599', '598', '600', '601', '607', '608', '2352', '1710', '1700', '1701', '1702', '1703', '1709', '2381', '3600', '3599', '3601', '3602', '3608', '3609', '3610', '8327', '8323', '8324', '8325', '8326', '8328', '950', '940', '941', '942', '943', '949', '2361', '11087', '11065', '1304', '1299', '1342', '1337', '1474', '1472', '1473', '1475', '1481', '1482', '2375', '105', '104', '106', '107', '113', '114', '2339', '181', '180', '182', '183', '189', '190', '2341', '257', '256', '258', '259', '265', '266', '1321', '2343', '333', '332', '334', '335', '341', '342', '2345', '380', '370', '371', '372', '373', '379', '2346', '532', '522', '523', '524', '525', '531', '2350', '656', '652', '759', '750', '751', '752', '753', '760', '2356', '789', '788', '790', '791', '797', '798', '2357', '844', '842', '988', '978', '979', '980', '981', '987', '2362', '997', '995', '1026', '1016', '1017', '1018', '1019', '1025', '2363', '1254', '1244', '1245', '1246', '1247', '1253', '2369', '1292', '1282', '1283', '1284', '1285', '1291', '2370', '7568']
+
+### Проверка кода
+
+```bash
+ruff format .
+ruff check .
+mypy src/
 ```
-Поиск может занять продолжительное время в зависимости от объема текста и количества найденных задач
+
+## Лицензия
+
+MIT License - см. файл [LICENSE](LICENSE).
+
+## Автор
+
+**princeofscale** - [GitHub](https://github.com/princeofscale)
+
+## Благодарности
+
+Основано на оригинальном [sdamgia-api](https://github.com/anijackich/sdamgia-api) от anijackich.
