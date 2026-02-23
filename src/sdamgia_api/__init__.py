@@ -21,6 +21,7 @@ from .models import (
     Variant,
     VariantInfo,
 )
+from .cache import cache_info, clear_cache
 from .utils import (
     download_image_async,
     download_image_sync,
@@ -28,7 +29,7 @@ from .utils import (
     download_problem_images_sync,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __author__ = "princeofscale"
 __all__ = [
     "SdamgiaClient",
@@ -55,4 +56,6 @@ __all__ = [
     "download_image_async",
     "download_problem_images_sync",
     "download_problem_images_async",
+    "clear_cache",
+    "cache_info",
 ]

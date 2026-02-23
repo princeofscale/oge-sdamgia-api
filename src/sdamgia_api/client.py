@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import concurrent.futures
 from typing import Any
 
+from .cache import ttl_cache
 from .exceptions import InvalidSubjectError
 from .models import (
     Catalog,
@@ -347,12 +349,18 @@ class SdamgiaClient:
         problem_ids: list[str | int],
         subject: Subject | str,
         exam_type: ExamType | str,
+        max_workers: int = 5,
     ) -> list[Problem]:
-        problems: list[Problem] = []
-        for problem_id in problem_ids:
-            problem = self.get_problem(problem_id, subject, exam_type)
-            problems.append(problem)
-        return problems
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self.get_problem, pid, subject, exam_type): i
+                for i, pid in enumerate(problem_ids)
+            }
+            results: list[Problem | None] = [None] * len(problem_ids)
+            for future in concurrent.futures.as_completed(futures):
+                idx = futures[future]
+                results[idx] = future.result()
+        return [r for r in results if r is not None]
 
     def close(self) -> None:
         self._transport.close()

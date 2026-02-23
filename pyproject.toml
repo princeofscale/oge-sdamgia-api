@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sdamgia-api"
-version = "2.0.0"
+version = "2.1.0"
 description = "Modern Python library for sdamgia.ru educational portal (OGE/EGE exam preparation)"
 readme = "README.md"
 license = "MIT"
@@ -50,6 +50,9 @@ dev = [
     "ruff>=0.14.14",
     "pre-commit>=4.5.1",
 ]
+
+[project.scripts]
+sdamgia = "sdamgia_api.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/princeofscale/oge-sdamgia-api"
