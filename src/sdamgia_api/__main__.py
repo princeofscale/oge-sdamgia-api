@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 
 from .client import SdamgiaClient
@@ -17,8 +16,12 @@ def main() -> None:
 
     problem_parser = subparsers.add_parser("problem", help="Получить задачу по ID")
     problem_parser.add_argument("id", help="ID задачи")
-    problem_parser.add_argument("--subject", "-s", default="math", help="Предмет (math, rus, phys, ...)")
-    problem_parser.add_argument("--exam", "-e", default="ege", choices=["oge", "ege"], help="Тип экзамена")
+    problem_parser.add_argument(
+        "--subject", "-s", default="math", help="Предмет (math, rus, phys, ...)"
+    )
+    problem_parser.add_argument(
+        "--exam", "-e", default="ege", choices=["oge", "ege"], help="Тип экзамена"
+    )
     problem_parser.add_argument("--json", action="store_true", help="Вывод в JSON")
 
     search_parser = subparsers.add_parser("search", help="Поиск задач")

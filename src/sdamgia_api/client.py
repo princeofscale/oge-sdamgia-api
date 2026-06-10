@@ -3,7 +3,6 @@ from __future__ import annotations
 import concurrent.futures
 from typing import Any
 
-from .cache import ttl_cache
 from .exceptions import InvalidSubjectError
 from .models import (
     Catalog,
