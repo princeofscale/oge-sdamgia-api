@@ -50,6 +50,7 @@ with SdamgiaClient() as client:
 import asyncio
 from sdamgia_api import AsyncSdamgiaClient, Subject, ExamType
 
+
 async def main():
     async with AsyncSdamgiaClient() as client:
         problem = await client.get_problem("1001", Subject.MATH, ExamType.EGE)
@@ -58,6 +59,7 @@ async def main():
         catalog = await client.get_catalog(Subject.MATH, ExamType.EGE)
         for topic in catalog.topics:
             print(f"Тема {topic.id}: {topic.name}")
+
 
 asyncio.run(main())
 ```
@@ -68,11 +70,11 @@ asyncio.run(main())
 
 ```python
 client = SdamgiaClient(
-    user_agent="Custom UA",      # Кастомный User-Agent
-    timeout=30.0,                # Таймаут запроса в секундах
-    max_retries=3,               # Количество повторов
-    rate_limit_rps=3.0,          # Лимит запросов в секунду
-    proxy="http://proxy:8080",   # Прокси (опционально)
+    user_agent="Custom UA",  # Кастомный User-Agent
+    timeout=30.0,  # Таймаут запроса в секундах
+    max_retries=3,  # Количество повторов
+    rate_limit_rps=3.0,  # Лимит запросов в секунду
+    proxy="http://proxy:8080",  # Прокси (опционально)
 )
 ```
 
@@ -129,21 +131,21 @@ class Catalog:
 ```python
 from sdamgia_api import Subject
 
-Subject.MATH    # Математика
-Subject.MATHB   # Математика (базовый уровень, только ЕГЭ)
-Subject.PHYS    # Физика
-Subject.INF     # Информатика
-Subject.RUS     # Русский язык
-Subject.BIO     # Биология
-Subject.EN      # Английский язык
-Subject.CHEM    # Химия
-Subject.GEO     # География
-Subject.SOC     # Обществознание
-Subject.HIST    # История
-Subject.LIT     # Литература
-Subject.DE      # Немецкий язык
-Subject.FR      # Французский язык
-Subject.SP      # Испанский язык
+Subject.MATH  # Математика
+Subject.MATHB  # Математика (базовый уровень, только ЕГЭ)
+Subject.PHYS  # Физика
+Subject.INF  # Информатика
+Subject.RUS  # Русский язык
+Subject.BIO  # Биология
+Subject.EN  # Английский язык
+Subject.CHEM  # Химия
+Subject.GEO  # География
+Subject.SOC  # Обществознание
+Subject.HIST  # История
+Subject.LIT  # Литература
+Subject.DE  # Немецкий язык
+Subject.FR  # Французский язык
+Subject.SP  # Испанский язык
 ```
 
 ### Тип экзамена (ExamType)
@@ -159,12 +161,12 @@ ExamType.EGE  # Единый государственный экзамен (11 �
 
 ```python
 from sdamgia_api import (
-    SdamgiaError,       # Базовое исключение
-    NetworkError,       # Сетевые ошибки
-    ParseError,         # Ошибки парсинга HTML
-    RateLimitError,     # Превышен лимит запросов (HTTP 429)
-    NotFoundError,      # Ресурс не найден
-    InvalidSubjectError # Неверный предмет для типа экзамена
+    SdamgiaError,  # Базовое исключение
+    NetworkError,  # Сетевые ошибки
+    ParseError,  # Ошибки парсинга HTML
+    RateLimitError,  # Превышен лимит запросов (HTTP 429)
+    NotFoundError,  # Ресурс не найден
+    InvalidSubjectError,  # Неверный предмет для типа экзамена
 )
 ```
 
